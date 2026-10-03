@@ -2,57 +2,59 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
-	copilot "github.com/github/copilot-sdk/go"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func main() {
-	client := copilot.NewClient(&copilot.ClientOptions{
-		LogLevel: "error",
-	})
+	log.Println("MAIN STARTED")
+	server := mcp.NewServer(&mcp.Implementation{
+		Name:    "mcp-example",
+		Version: "1.0.0",
+	}, nil)
 
-	ctx := context.Background()
+	mcp.AddTool(
+		server,
+		&mcp.Tool{
+			Name:        "greet_and_add",
+			Description: "Greet someone and add two numbers",
+		},
+		GreetandAddWorkflow,
+	)
 
-	err := client.Start(ctx)
+	log.Println("TOOL REGISTERED")
+	log.Println("MCP server starting...")
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer client.Stop()
-
-	session, err := client.CreateSession(ctx, &copilot.SessionConfig{
-		Model:               "fable",
-		OnPermissionRequest: copilot.PermissionHandler.ApproveAll,
-	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer session.Disconnect()
-
-	done := make(chan (bool))
-
-	session.On(func(event copilot.SessionEvent) {
-		switch d := event.Data.(type) {
-		case *copilot.AssistantMessageData:
-			fmt.Println(d.Content)
-		case *copilot.SessionIdleData:
-			close(done)
-		}
-	})
-
-	_, err = session.Send(ctx, copilot.MessageOptions{
-		Prompt: "cenas",
-	})
+	err := server.Run(context.Background(), &mcp.StdioTransport{})
 
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("MCP SERVER IS RUNNING")
+}
 
-	<-done
+func GreetandAddWorkflow(
+	ctx context.Context,
+	req *mcp.CallToolRequest,
+	input GreetAndAddInput,
+) (*mcp.CallToolResult, GreetAndAddOutput, error) {
+	sum := add(input.A, input.B)
+	return &mcp.CallToolResult{}, GreetAndAddOutput{Message: "Hello Rui",
+		Sum: sum}, nil
+}
 
+func add(a, b int) int {
+	return a + b
+}
+
+type GreetAndAddInput struct {
+	Name string `json:"name"`
+	A    int    `json:"a"`
+	B    int    `json:"b"`
+}
+
+type GreetAndAddOutput struct {
+	Message string `json:"message"`
+	Sum     int    `json:"sum"`
 }
