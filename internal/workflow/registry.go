@@ -16,11 +16,8 @@ func (r *Registry) Register(kind WorkflowType, handler Handler) {
 	r.handlers[kind] = handler
 }
 
-func (r *Registry) GetHandler(kind WorkflowType) Handler {
+func (r *Registry) Get(kind WorkflowType) (Handler, bool) {
 	val, ok := r.handlers[kind]
 
-	if !ok {
-		return nil
-	}
-	return val
+	return val, ok
 }
