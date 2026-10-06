@@ -6,16 +6,18 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rpstvs/mcp-go/config"
-	agentdiscovery "github.com/rpstvs/mcp-go/internal/agent-discovery"
+	mcpserver "github.com/rpstvs/mcp-go/internal/mcp"
+	"github.com/rpstvs/mcp-go/internal/store"
+	"github.com/rpstvs/mcp-go/internal/workflow"
 )
 
 func main() {
 
 	config := config.Load()
 
-	app := App{
-		config: *config,
-	}
+	store := store.NewInMemStore()
+
+	engine := workflow.NewEngine(*config, store)
 
 	log.Println("MAIN STARTED")
 	server := mcp.NewServer(&mcp.Implementation{
@@ -24,6 +26,7 @@ func main() {
 	}, nil)
 
 	log.Println("TOOL REGISTERED")
+	mcpserver.Register(server, engine)
 	log.Println("MCP server starting...")
 
 	err := server.Run(context.Background(), &mcp.StdioTransport{})
@@ -31,10 +34,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("MCP SERVER IS RUNNING")
-}
-
-type App struct {
-	config config.Config
-	Agents map[string]agentdiscovery.Agent
 }
