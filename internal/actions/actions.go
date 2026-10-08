@@ -7,6 +7,15 @@ import (
 )
 
 type Handler func(ctx context.Context, run *types.Run)
-type Action struct {
-	handler Handler
+
+type Actions struct {
+	GetPrAction    Handler
+	ReviewPrAction Handler
+}
+
+func NewActions(copilot *sdk) *Actions {
+	return &Actions{
+		GetPrAction:    GetPrAction(copilot),
+		ReviewPrAction: ReviewPrAction(copilot),
+	}
 }
