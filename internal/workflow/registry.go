@@ -2,24 +2,22 @@ package workflow
 
 import "github.com/rpstvs/mcp-go/types"
 
-type Handler func(run *types.Run) error
-
 type Registry struct {
-	handlers map[types.WorkflowType]Handler
+	workflows map[types.WorkflowType]Workflow
 }
 
 func NewRegistry() *Registry {
 	return &Registry{
-		handlers: make(map[types.WorkflowType]Handler),
+		workflows: make(map[types.WorkflowType]Workflow),
 	}
 }
 
-func (r *Registry) Register(kind types.WorkflowType, handler Handler) {
-	r.handlers[kind] = handler
+func (r *Registry) Register(kind types.WorkflowType, wf Workflow) {
+	r.workflows[kind] = wf
 }
 
-func (r *Registry) Get(kind types.WorkflowType) (Handler, bool) {
-	val, ok := r.handlers[kind]
+func (r *Registry) Get(kind types.WorkflowType) (Workflow, bool) {
+	val, ok := r.workflows[kind]
 
 	return val, ok
 }

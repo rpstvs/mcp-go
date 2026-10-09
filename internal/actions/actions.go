@@ -13,7 +13,7 @@ type Actions struct {
 	ReviewPrAction Handler
 }
 
-func NewActions(copilot *sdk) *Actions {
+func NewActions(copilot *copilot) *Actions {
 	return &Actions{
 		GetPrAction:    GetPrAction(copilot),
 		ReviewPrAction: ReviewPrAction(copilot),

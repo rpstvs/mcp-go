@@ -64,7 +64,18 @@ func (e *Engine) Start(kind types.WorkflowType, workspace string, input any) (*t
 
 	go e.execute(run.ID)
 
+	ctx := context.Background()
+	go e.RunWorkflow(ctx, run, workflow)
+
 	return run, nil
+}
+
+func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow Workflow) error {
+
+	for _, v := range workflow.Steps {
+		v(context.Background(), run)
+	}
+	return nil
 }
 
 func (e *Engine) execute(runid string) error {
