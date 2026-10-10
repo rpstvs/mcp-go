@@ -2,21 +2,18 @@ package actions
 
 import (
 	"context"
+	"fmt"
 
 	copilot "github.com/github/copilot-sdk/go"
 	"github.com/rpstvs/mcp-go/types"
 )
 
-func ReviewPrAction(copilot *copilot) Handler {
+func ReviewPrAction() Handler {
 	return func(ctx context.Context, run *types.Run) {
-		session, err := copilot.Session(...)
-        if err != nil {
-            return err
-        }
+		run.Session.Send(ctx, copilot.MessageOptions{
+			Prompt: fmt.Sprintf(`Review the PR %d`, run.InputJSON),
+		})
 
-        // perform review
-
-        return nil
 	}
 
 }

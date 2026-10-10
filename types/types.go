@@ -1,6 +1,10 @@
 package types
 
-import "time"
+import (
+	"time"
+
+	sdk "github.com/github/copilot-sdk/go"
+)
 
 type WorkflowType string
 
@@ -34,6 +38,7 @@ type Run struct {
 	Approval   string       `json:"approval,omitempty"`
 	CreatedAt  time.Time    `json:"created_at"`
 	UpdatedAt  time.Time    `json:"updated_at"`
+	Session    *sdk.Session
 }
 
 type ReviewFinding struct {

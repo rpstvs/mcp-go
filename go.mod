@@ -3,7 +3,7 @@ module github.com/rpstvs/mcp-go
 go 1.25.0
 
 require (
-	github.com/github/copilot-sdk/go v1.0.16
+	github.com/github/copilot-sdk/go v1.0.19
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/modelcontextprotocol/go-sdk v1.8.0

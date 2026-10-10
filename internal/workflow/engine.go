@@ -18,15 +18,16 @@ type Engine struct {
 	config   config.Config
 	registry *Registry
 	Store    store.Store
+	Sessions copilot.SessionFactory
 }
 
-func NewEngine(cfg config.Config, store store.Store) *Engine {
+func NewEngine(cfg config.Config, store store.Store, factory copilot.SessionFactory) *Engine {
 	e := &Engine{
 		config:   cfg,
 		registry: NewRegistry(),
 		Store:    store,
+		Sessions: factory,
 	}
-	e.registry.Register(types.WorkflowReviewPR, e.runPrReview)
 
 	return e
 }
@@ -72,8 +73,15 @@ func (e *Engine) Start(kind types.WorkflowType, workspace string, input any) (*t
 
 func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow Workflow) error {
 
-	for _, v := range workflow.Steps {
-		v(context.Background(), run)
+	session, err := e.Sessions.Create(ctx)
+	if err != nil {
+		return err
+	}
+
+	run.Session = session
+
+	for _, StepHandler := range workflow.Steps {
+		StepHandler(ctx, run)
 	}
 	return nil
 }
