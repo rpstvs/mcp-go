@@ -33,3 +33,11 @@ func (f *CopilotSessionFactory) Create(ctx context.Context) (*copilot.Session, e
 
 	return session, nil
 }
+
+func (f *CopilotSessionFactory) Start(ctx context.Context) error {
+	return f.CopilotClient.Start(ctx)
+}
+
+func (f *CopilotSessionFactory) Stop() error {
+	return f.CopilotClient.Stop()
+}

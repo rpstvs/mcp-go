@@ -6,21 +6,35 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rpstvs/mcp-go/config"
+	"github.com/rpstvs/mcp-go/internal/actions"
 	"github.com/rpstvs/mcp-go/internal/copilot"
+	"github.com/rpstvs/mcp-go/internal/engine"
 	mcpserver "github.com/rpstvs/mcp-go/internal/mcp"
 	"github.com/rpstvs/mcp-go/internal/store"
 	"github.com/rpstvs/mcp-go/internal/workflow"
 )
 
 func main() {
-
+	//Load config
 	config := config.Load()
-
+	//Create store
 	store := store.NewInMemStore()
-
+	//Create Copilot Client
 	copilotFactory := copilot.NewCopilotSessionFactory()
 
-	engine := workflow.NewEngine(*config, store, copilotFactory)
+	copilotFactory.Start(context.Background())
+
+	defer copilotFactory.Stop()
+	//Create Actions
+	actions := actions.NewActions()
+
+	//create workflows
+	Workflows := workflow.CreateWorkflows(actions)
+
+	//Create Engine and register workflows
+	engine := engine.NewEngine(*config, store, copilotFactory)
+
+	engine.RegisterWorkflows(Workflows)
 
 	log.Println("MAIN STARTED")
 	server := mcp.NewServer(&mcp.Implementation{

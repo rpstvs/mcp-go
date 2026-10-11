@@ -4,11 +4,11 @@ import (
 	"context"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/rpstvs/mcp-go/internal/workflow"
+	"github.com/rpstvs/mcp-go/internal/engine"
 	"github.com/rpstvs/mcp-go/types"
 )
 
-func Register(server *sdk.Server, engine *workflow.Engine) {
+func Register(server *sdk.Server, engine *engine.Engine) {
 	registerStartWorkflow(server, engine)
 }
 
@@ -19,12 +19,13 @@ type StartWorkflowInput struct {
 }
 
 type StartWorkflowOutput struct {
-	RunID string `json:"run_id"`
-	Type  string `json:"type"`
-	State string `json:"state"`
+	RunID     string `json:"run_id"`
+	Type      string `json:"type"`
+	State     string `json:"state"`
+	Workspace string `json:"workspace"`
 }
 
-func registerStartWorkflow(server *sdk.Server, engine *workflow.Engine) {
+func registerStartWorkflow(server *sdk.Server, engine *engine.Engine) {
 	sdk.AddTool(
 		server,
 		&sdk.Tool{
@@ -40,9 +41,10 @@ func registerStartWorkflow(server *sdk.Server, engine *workflow.Engine) {
 				return nil, StartWorkflowOutput{}, err
 			}
 			return nil, StartWorkflowOutput{
-				RunID: run.ID,
-				Type:  string(run.Type),
-				State: string(run.State),
+				RunID:     run.ID,
+				Type:      string(run.Type),
+				State:     string(run.State),
+				Workspace: string(run.Workspace),
 			}, nil
 		},
 	)

@@ -1,4 +1,4 @@
-package workflow
+package engine
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/rpstvs/mcp-go/config"
 	"github.com/rpstvs/mcp-go/internal/copilot"
 	"github.com/rpstvs/mcp-go/internal/store"
+	"github.com/rpstvs/mcp-go/internal/workflow"
 	"github.com/rpstvs/mcp-go/types"
 )
 
@@ -28,8 +29,13 @@ func NewEngine(cfg config.Config, store store.Store, factory copilot.SessionFact
 		Store:    store,
 		Sessions: factory,
 	}
-
 	return e
+}
+
+func (e *Engine) RegisterWorkflows(wfs []workflow.Workflow) {
+	for _, wf := range wfs {
+		e.registry.Register(wf.Name, wf)
+	}
 }
 
 func (e *Engine) Start(kind types.WorkflowType, workspace string, input any) (*types.Run, error) {
@@ -57,52 +63,44 @@ func (e *Engine) Start(kind types.WorkflowType, workspace string, input any) (*t
 		UpdatedAt: now,
 	}
 
-	if _, ok := e.registry.Get(kind); !ok {
+	wf, ok := e.registry.Get(kind)
+	if !ok {
 		return nil, fmt.Errorf("unknown workflow ")
 	}
 
 	e.Store.CreateRun(run)
 
-	go e.execute(run.ID)
-
 	ctx := context.Background()
-	go e.RunWorkflow(ctx, run, workflow)
+	e.RunWorkflow(ctx, run, wf)
 
 	return run, nil
 }
 
-func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow Workflow) error {
-
-	session, err := e.Sessions.Create(ctx)
-	if err != nil {
-		return err
-	}
-
-	run.Session = session
-
-	for _, StepHandler := range workflow.Steps {
-		StepHandler(ctx, run)
-	}
-	return nil
-}
-
-func (e *Engine) execute(runid string) error {
-
-	run := e.Store.GetRun(runid)
+func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workflow.Workflow) (*types.Run, error) {
 
 	run.State = types.StateRunning
 
-	handler, ok := e.registry.Get(run.Type)
-
-	if !ok {
-		return fmt.Errorf("handler not registered")
+	session, err := e.Sessions.Create(ctx)
+	if err != nil {
+		run.State = types.StateFailed
+		return run, err
 	}
 
-	handler(run)
+	run.Session = session
+	var output string
+	for _, StepHandler := range workflow.Steps {
+		output, err = StepHandler(ctx, run)
 
-	e.Store.UpdateRun(run)
+		if err != nil {
+			run.State = types.StateFailed
+			return run, err
+		}
+	}
 
-	return nil
+	run.OutputJSON = output
+
+	run.State = types.StateCompleted
+	return run, nil
 }
 
 func (e *Engine) Approve(id string, comment string) error {
