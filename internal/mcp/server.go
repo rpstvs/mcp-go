@@ -49,3 +49,28 @@ func registerStartWorkflow(server *sdk.Server, engine *engine.Engine) {
 		},
 	)
 }
+
+func registerApprove(server *sdk.Server, engine *engine.Engine) {
+	sdk.AddTool(
+		server,
+		&sdk.Tool{
+			Name:        "Approve",
+			Description: "Approve a workflow that stopped due to the need of human decision",
+		},
+
+		func(ctx context.Context, req *sdk.CallToolRequest, in StartWorkflowInput) (*sdk.CallToolResult, StartWorkflowOutput, error) {
+
+			err := engine.Approve(types.WorkflowType(in.Type), in.Workspace)
+
+			if err != nil {
+				return nil, StartWorkflowOutput{}, err
+			}
+			return nil, StartWorkflowOutput{
+				RunID:     run.ID,
+				Type:      string(run.Type),
+				State:     string(run.State),
+				Workspace: string(run.Workspace),
+			}, nil
+		},
+	)
+}

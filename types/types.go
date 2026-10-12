@@ -16,15 +16,17 @@ const (
 type RunState string
 
 const (
-	StateQueued        RunState = "queued"
-	StateRunning       RunState = "running"
-	StateAwaitingPlan  RunState = "awaiting_plan"
-	StateReviewing     RunState = "reviewing"
-	StateVerifying     RunState = "verifying"
-	StateAwaitingFinal RunState = "awaiting_final"
-	StateCompleted     RunState = "completed"
-	StateRejected      RunState = "rejected"
-	StateFailed        RunState = "failed"
+	StateQueued           RunState = "queued"
+	StateRunning          RunState = "running"
+	StateAwaitingPlan     RunState = "awaiting_plan"
+	StateAwaitingDecision RunState = "awaiting_decision"
+	StateReviewing        RunState = "reviewing"
+	StateVerifying        RunState = "verifying"
+	StateAwaitingFinal    RunState = "awaiting_final"
+	StateCompleted        RunState = "completed"
+	StateApproved         RunState = "Approved"
+	StateRejected         RunState = "rejected"
+	StateFailed           RunState = "failed"
 )
 
 type Run struct {
