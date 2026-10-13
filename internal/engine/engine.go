@@ -103,6 +103,10 @@ func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workf
 	return run, nil
 }
 
+func (e *Engine) ResumeWorkflow() {
+
+}
+
 func (e *Engine) Approve(id string, comment string) error {
 
 	run := e.Store.GetRun(id)
@@ -122,29 +126,6 @@ func (e *Engine) Reject(id, reason string) error {
 	run.State = types.StateRejected
 
 	e.Store.UpdateRun(run)
-
-	return nil
-}
-
-func (e *Engine) runPrReview(run *types.Run) error {
-	var input types.PRReviewInput
-
-	if err := json.Unmarshal([]byte(run.InputJSON), &input); err != nil {
-		return err
-	}
-
-	ctx := context.Background()
-
-	reviewer := copilot.NewCopilotReviewer(e.config)
-
-	result, err := reviewer.ReviewPR(ctx, input.Workspace, input.PullRequest)
-
-	if err != nil {
-		return err
-	}
-
-	run.OutputJSON = result
-	run.State = types.StateCompleted
 
 	return nil
 }

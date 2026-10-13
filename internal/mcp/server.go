@@ -50,6 +50,16 @@ func registerStartWorkflow(server *sdk.Server, engine *engine.Engine) {
 	)
 }
 
+type ApproveActionInput struct {
+	Id    string         `json:"id" jsonschema:"workflow type, for example review_pr or implement_ticket"`
+	Input map[string]any `json:"input" jsonschema:"workflow-specific input"`
+}
+type ApproveActionOutput struct {
+	RunID string `json:"run_id"`
+	Type  string `json:"type"`
+	State string `json:"state"`
+}
+
 func registerApprove(server *sdk.Server, engine *engine.Engine) {
 	sdk.AddTool(
 		server,
@@ -58,18 +68,17 @@ func registerApprove(server *sdk.Server, engine *engine.Engine) {
 			Description: "Approve a workflow that stopped due to the need of human decision",
 		},
 
-		func(ctx context.Context, req *sdk.CallToolRequest, in StartWorkflowInput) (*sdk.CallToolResult, StartWorkflowOutput, error) {
+		func(ctx context.Context, req *sdk.CallToolRequest, in ApproveActionInput) (*sdk.CallToolResult, ApproveActionOutput, error) {
 
-			err := engine.Approve(types.WorkflowType(in.Type), in.Workspace)
+			err := engine.Approve(in.Id, in.Workspace)
 
 			if err != nil {
-				return nil, StartWorkflowOutput{}, err
+				return nil, ApproveActionOutput{}, err
 			}
-			return nil, StartWorkflowOutput{
-				RunID:     run.ID,
-				Type:      string(run.Type),
-				State:     string(run.State),
-				Workspace: string(run.Workspace),
+			return nil, ApproveActionOutput{
+				RunID: run.ID,
+				Type:  string(run.Type),
+				State: string(run.State),
 			}, nil
 		},
 	)
