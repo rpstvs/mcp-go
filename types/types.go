@@ -40,6 +40,8 @@ type Run struct {
 	Approval   string       `json:"approval,omitempty"`
 	CreatedAt  time.Time    `json:"created_at"`
 	UpdatedAt  time.Time    `json:"updated_at"`
+	StepIndex  int
+	TotalSteps int
 	Session    *sdk.Session
 }
 

@@ -70,8 +70,7 @@ func registerApprove(server *sdk.Server, engine *engine.Engine) {
 
 		func(ctx context.Context, req *sdk.CallToolRequest, in ApproveActionInput) (*sdk.CallToolResult, ApproveActionOutput, error) {
 
-			err := engine.Approve(in.Id, in.Workspace)
-
+			err := engine.Approve(in.Id, "placeholder")
 			if err != nil {
 				return nil, ApproveActionOutput{}, err
 			}

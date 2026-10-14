@@ -61,13 +61,14 @@ func (e *Engine) Start(kind types.WorkflowType, workspace string, input any) (*t
 		InputJSON: string(raw),
 		CreatedAt: now,
 		UpdatedAt: now,
+		StepIndex: 0,
 	}
 
 	wf, ok := e.registry.Get(kind)
 	if !ok {
 		return nil, fmt.Errorf("unknown workflow ")
 	}
-
+	run.TotalSteps = len(wf.Steps)
 	e.Store.CreateRun(run)
 
 	ctx := context.Background()
@@ -88,7 +89,8 @@ func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workf
 
 	run.Session = session
 	var output string
-	for _, StepHandler := range workflow.Steps {
+	for i, StepHandler := range workflow.Steps {
+		run.StepIndex = i
 		output, err = StepHandler(ctx, run)
 
 		if err != nil {
@@ -103,18 +105,20 @@ func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workf
 	return run, nil
 }
 
-func (e *Engine) ResumeWorkflow() {
-
-}
-
 func (e *Engine) Approve(id string, comment string) error {
 
 	run := e.Store.GetRun(id)
 
 	run.Approval = "approved: " + comment
 	run.State = types.StateRunning
+	wf, exists := e.registry.workflows[run.Type]
+
+	if !exists {
+		return fmt.Errorf("workflow doesnt exist.")
+	}
 
 	e.Store.UpdateRun(run)
+	e.RunWorkflow(context.Background(), run, wf)
 
 	return nil
 }
