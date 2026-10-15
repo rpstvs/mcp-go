@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rpstvs/mcp-go/config"
 	"github.com/rpstvs/mcp-go/internal/copilot"
 	"github.com/rpstvs/mcp-go/internal/store"
@@ -52,9 +51,9 @@ func (e *Engine) Start(kind types.WorkflowType, workspace string, input any) (*t
 	}
 
 	now := time.Now().UTC()
-
+	i := +1
 	run := &types.Run{
-		ID:        uuid.NewString(),
+		ID:        fmt.Sprintf("%s-%d", kind, i),
 		Type:      kind,
 		State:     types.StateQueued,
 		Workspace: workspace,
@@ -72,14 +71,6 @@ func (e *Engine) Start(kind types.WorkflowType, workspace string, input any) (*t
 	e.Store.CreateRun(run)
 
 	ctx := context.Background()
-	e.RunWorkflow(ctx, run, wf)
-
-	return run, nil
-}
-
-func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workflow.Workflow) (*types.Run, error) {
-
-	run.State = types.StateRunning
 
 	session, err := e.Sessions.Create(ctx)
 	if err != nil {
@@ -88,13 +79,29 @@ func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workf
 	}
 
 	run.Session = session
+
+	run, err = e.RunWorkflow(ctx, run, wf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return run, nil
+}
+
+func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workflow.Workflow) (*types.Run, error) {
+
+	run.State = types.StateRunning
+
 	var output string
+	var err error
 	for i, StepHandler := range workflow.Steps {
 		run.StepIndex = i
 		output, err = StepHandler(ctx, run)
 
 		if err != nil {
 			run.State = types.StateFailed
+			run.Error = err.Error()
 			return run, err
 		}
 	}
@@ -105,22 +112,30 @@ func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workf
 	return run, nil
 }
 
-func (e *Engine) Approve(id string, comment string) error {
+func (e *Engine) Approve(id string, comment string) (*types.Run, error) {
 
 	run := e.Store.GetRun(id)
+
+	if run.State != types.StateAwaitingDecision {
+		return nil, fmt.Errorf("run not awaiting decision")
+	}
 
 	run.Approval = "approved: " + comment
 	run.State = types.StateRunning
 	wf, exists := e.registry.workflows[run.Type]
 
 	if !exists {
-		return fmt.Errorf("workflow doesnt exist.")
+		return nil, fmt.Errorf("workflow doesnt exist.")
 	}
 
 	e.Store.UpdateRun(run)
-	e.RunWorkflow(context.Background(), run, wf)
+	run, err := e.RunWorkflow(context.Background(), run, wf)
 
-	return nil
+	if err != nil {
+		return nil, err
+	}
+
+	return run, nil
 }
 
 func (e *Engine) Reject(id, reason string) error {

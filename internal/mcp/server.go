@@ -23,6 +23,7 @@ type StartWorkflowOutput struct {
 	Type      string `json:"type"`
 	State     string `json:"state"`
 	Workspace string `json:"workspace"`
+	Error     string `json:"error"`
 }
 
 func registerStartWorkflow(server *sdk.Server, engine *engine.Engine) {
@@ -45,6 +46,7 @@ func registerStartWorkflow(server *sdk.Server, engine *engine.Engine) {
 				Type:      string(run.Type),
 				State:     string(run.State),
 				Workspace: string(run.Workspace),
+				Error:     string(run.Error),
 			}, nil
 		},
 	)
@@ -70,7 +72,7 @@ func registerApprove(server *sdk.Server, engine *engine.Engine) {
 
 		func(ctx context.Context, req *sdk.CallToolRequest, in ApproveActionInput) (*sdk.CallToolResult, ApproveActionOutput, error) {
 
-			err := engine.Approve(in.Id, "placeholder")
+			run, err := engine.Approve(in.Id, "placeholder")
 			if err != nil {
 				return nil, ApproveActionOutput{}, err
 			}

@@ -7,5 +7,6 @@ import (
 )
 
 func HumanGate(ctx context.Context, run *types.Run) (*types.Run, error) {
-
+	run.State = types.StateAwaitingDecision
+	return run, nil
 }
