@@ -61,6 +61,7 @@ func (e *Engine) Start(kind types.WorkflowType, workspace string, input any) (*t
 		CreatedAt: now,
 		UpdatedAt: now,
 		StepIndex: 0,
+		Decision:  types.AwaitingDecision,
 	}
 
 	wf, ok := e.registry.Get(kind)
@@ -95,14 +96,17 @@ func (e *Engine) RunWorkflow(ctx context.Context, run *types.Run, workflow workf
 
 	var output string
 	var err error
-	for i, StepHandler := range workflow.Steps {
-		run.StepIndex = i
-		output, err = StepHandler(ctx, run)
+	for run.StepIndex < len(workflow.Steps) {
+		output, err = workflow.Steps[run.StepIndex](ctx, run)
 
 		if err != nil {
 			run.State = types.StateFailed
 			run.Error = err.Error()
 			return run, err
+		}
+		run.StepIndex++
+		if run.State == types.StateAwaitingDecision {
+			return run, nil
 		}
 	}
 
@@ -116,12 +120,12 @@ func (e *Engine) Approve(id string, comment string) (*types.Run, error) {
 
 	run := e.Store.GetRun(id)
 
-	if run.State != types.StateAwaitingDecision {
+	if run.Decision != types.AwaitingDecision {
 		return nil, fmt.Errorf("run not awaiting decision")
 	}
 
 	run.Approval = "approved: " + comment
-	run.State = types.StateRunning
+	run.Decision = types.DecisionApproved
 	wf, exists := e.registry.workflows[run.Type]
 
 	if !exists {
@@ -138,13 +142,29 @@ func (e *Engine) Approve(id string, comment string) (*types.Run, error) {
 	return run, nil
 }
 
-func (e *Engine) Reject(id, reason string) error {
+func (e *Engine) Reject(id, reason string) (*types.Run, error) {
 	run := e.Store.GetRun(id)
 
+	if run.Decision != types.AwaitingDecision {
+		return nil, fmt.Errorf("run not awaiting decision")
+	}
+
 	run.Approval = "rejected: " + reason
-	run.State = types.StateRejected
+	run.Decision = types.DecisionRejected
+
+	wf, exists := e.registry.workflows[run.Type]
+
+	if !exists {
+		return nil, fmt.Errorf("workflow not registered")
+	}
 
 	e.Store.UpdateRun(run)
 
-	return nil
+	run, err := e.RunWorkflow(context.Background(), run, wf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return run, nil
 }

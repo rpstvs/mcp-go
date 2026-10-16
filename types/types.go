@@ -24,9 +24,15 @@ const (
 	StateVerifying        RunState = "verifying"
 	StateAwaitingFinal    RunState = "awaiting_final"
 	StateCompleted        RunState = "completed"
-	StateApproved         RunState = "Approved"
-	StateRejected         RunState = "rejected"
 	StateFailed           RunState = "failed"
+)
+
+type Decision string
+
+const (
+	DecisionApproved Decision = "approved"
+	DecisionRejected Decision = "rejected"
+	AwaitingDecision Decision = "awaiting_decision"
 )
 
 type Run struct {
@@ -40,6 +46,7 @@ type Run struct {
 	Approval   string       `json:"approval,omitempty"`
 	CreatedAt  time.Time    `json:"created_at"`
 	UpdatedAt  time.Time    `json:"updated_at"`
+	Decision   Decision
 	StepIndex  int
 	TotalSteps int
 	Session    *sdk.Session

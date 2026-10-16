@@ -20,7 +20,9 @@ func ReviewPrWorkflow(a *actions.Actions) Workflow {
 	return Workflow{
 		Name: types.WorkflowReviewPR,
 		Steps: []actions.Handler{
+			a.HumanGate,
 			a.ReviewPrAction,
+			a.HumanGate,
 		},
 	}
 }

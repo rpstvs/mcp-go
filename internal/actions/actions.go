@@ -9,12 +9,13 @@ import (
 type Handler func(ctx context.Context, run *types.Run) (string, error)
 
 type Actions struct {
-	GetPrAction    Handler
 	ReviewPrAction Handler
+	HumanGate      Handler
 }
 
 func NewActions() *Actions {
 	return &Actions{
 		ReviewPrAction: ReviewPrAction(),
+		HumanGate:      HumanGate(),
 	}
 }
